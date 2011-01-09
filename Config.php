@@ -11,14 +11,21 @@ class Config
     private static $instance = null;
 
     /**
-     * Constructor is marked private to enforce singleton pattern.
+     * You probably want the Config::getInstance() method instead. It works
+     * similarly to the Singleton pattern (always returns the same instance)
+     * and improves performance and reduces memory usage.
+     *
+     * The constructor is only scoped public to facilitate unit testing
+     * (specifically to allow mocked methods to isolate units of code).
      */
-    private function __construct()
+    public function __construct()
     {
     }
 
     /**
-     * Fetch a common instance of Config (implements singleton pattern).
+     * Fetch a common instance of Config. This allows usage similar to the
+     * Singleton pattern, but note that the constructor is still public
+     * in order to facilitate testing (allowing us to mock the object).
      *
      * @return Config
      */
@@ -103,7 +110,8 @@ class Config
     public function splitString($input, $delim=',')
     {
         $values = array();
-        // split on delimiter only if its not preceeded by a backslash
+        $delim  = preg_quote($delim);
+        // only split on delimiters that are not preceeded by escape characters.
         $parts = preg_split("/(?<!\\\){$delim}/", $input);
         foreach ($parts as &$match) {
             // unescape delimiters that are preceeded by a backslash
@@ -141,7 +149,16 @@ class Config
         switch ($type) {
             case 'bool':
             case 'boolean':
-                $value = (bool) $value;
+                $lower  = strtolower($value);
+                $falsy  = array('false', 'no', 'off', 'disabled');
+                $truthy = array('true', 'yes', 'on', 'enabled');
+                if (in_array($lower, $falsy)) {
+                    $value = false;
+                } elseif (in_array($lower, $truthy)) {
+                    $value = true;
+                } else {
+                    $value = (bool) $value;
+                }
                 break;
 
             case 'int':
