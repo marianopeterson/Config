@@ -1,9 +1,9 @@
 <?php
 $root = dirname(__FILE__);
 require_once($root . '/Config.php');
-require_once($root . '/Exception.php');
-require_once($root . '/Storage/Interface.php');
-require_once($root . '/Storage/File.php');
+require_once($root . '/Config/Exception.php');
+require_once($root . '/Config/Storage/Interface.php');
+require_once($root . '/Config/Storage/File.php');
 
 
 $ini = array();
