@@ -10,11 +10,6 @@ class Config
     private $keys = array();
     private static $instance = null;
 
-    public function toArray()
-    {
-        return $this->keys;
-    }
-
     /**
      * Constructor is marked private to enforce singleton pattern.
      */
@@ -43,6 +38,11 @@ class Config
         return $this->keys[$key];
     }
 
+    public function toArray()
+    {
+        return $this->keys;
+    }
+
     public function load($storage)
     {
         if (!is_array($storage)) {
@@ -68,6 +68,12 @@ class Config
                     substr($line, 0, 1) == '#' ||
                     substr($line, 0, 2) == '//') {
                 continue;
+            }
+            if (strpos($line, self::KEY_DELIMITER) === false) {
+                throw new Config_Exception(sprintf(
+                            "Invalid configuration syntax (missing delimiter %s): %s",
+                            self::KEY_DELIMITER,
+                            $line));
             }
 
             // Parse key, value, and type
