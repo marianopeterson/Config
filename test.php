@@ -1,11 +1,17 @@
 <?php
+$root = dirname(__FILE__);
+require_once($root . '/Config.php');
+require_once($root . '/Exception.php');
+require_once($root . '/Storage/Interface.php');
+require_once($root . '/Storage/File.php');
 
-require_once(dirname(__FILE__). '/Config2.php');
+
+$ini = array();
+for ($i = 1; $i < count($argv); $i++) {
+    $ini[] = new Config_Storage_File($root . "/" . $argv[$i]);
+}
 
 $config = Config::getInstance();
-
-$ini = dirname(__FILE__) . '/test.ini';
-$config->load(new Config_Storage_File($ini));
-
+$config->load($ini);
 
 print_r($config->toArray());
