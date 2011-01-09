@@ -1,0 +1,25 @@
+TODO:
+build a caching mechanism
+build a loading mechanism that translates an environment name into a set of Config_Storage_Interface instances.
+
+
+GENERAL PROCESS:
+store source
+load(sourceList):
+    foreach part in sourceList:
+        this->loadFromSource(part)  // splits line using LINE_DELIMITER,
+                                    // removes comment lines and blank lines
+            foreach line in part:
+                parse value(line)   // parse type from key, cast value to type
+        merge result into this->configData
+
+
+// Interface to read in a multiline text blob of (key,value) pairs
+//      Class to read this from a database
+//      Class to read this from a file
+//      Class to read this from memcache
+//      Class to read this from APC
+// Class to parse each line (skip comments, convert types, unescape delimiters)
+// Class to store the results (and override keys with new data sets)
+
+// Class to determine the different sources that should be loaded based on an environment name
