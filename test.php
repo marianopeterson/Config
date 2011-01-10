@@ -15,3 +15,5 @@ $config = Config::getInstance();
 $config->load($ini);
 
 print_r($config->toArray());
+
+print_r($config->get("db.hosts"));

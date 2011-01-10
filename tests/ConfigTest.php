@@ -3,7 +3,7 @@ $root = dirname(dirname(__FILE__));
 require_once($root . "/Config.php");
 require_once($root . "/Config/Exception.php");
 
-class Test_Config extends PHPUnit_Framework_TestCase
+class ConfigTest extends PHPUnit_Framework_TestCase
 {
     public function testGetInstanceReturnsSameObject()
     {
