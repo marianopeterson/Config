@@ -1,5 +1,13 @@
 TODO:
 build a caching mechanism
+
+    1. Cache the parsed specs based on the environment name that created
+       the Config. For example, you shouldn't have to reparse the results
+       for "dev.mariano".
+
+    2. Cache the fetched specs for each environment in a local file (to
+       protect against remote storage becoming unavailable).
+
 build a loading mechanism that translates an environment name into a set of Config_Storage_Interface instances.
 
 
