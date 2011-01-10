@@ -3,48 +3,48 @@
 class Config_Environment
 {
     /**
-     * Takes an environment name and translates it into a list of
-     * ancestor environments.
+     * Takes an environment name and translates it into a sequence of
+     * environments that form its ancestral lineage.
      * Example:
      *      given:      dev.foo
      *      returns:    array(default, dev, dev.foo)
      *
-     * @param string $env    Name of the environment whose ancestors will be determined
-     * @param string $join   String used to join the ancestor names
-     * @param string $prefix String that is prepended to each ancestor name
-     * @param string $suffix String that is appended to each ancestor name
+     * @param string $environment Environment name whose lineage will be returned.
+     * @param array  $opts        Array of options affecting the lineage.
+     *     Options include:
+     *     - root:   String that will always be set as the root element.
+     *     - prefix: String that is prepended to the name of each ancestor.
+     *     - join:   String that is used to join the ancestor names together.
+     *     - suffix: String that is appended to the name of each ancestor.
      *
      * @return array<string>
      */
-    public function getAncestors($env, $join='.', $prefix='', $suffix='')
+    public function getLineage($environment, array $opts = array())
     {
-        $base = '';
-        $keys = array($prefix . 'default' . $suffix);
-        foreach (explode(".", $env) as $part) {
-            $keys[] = $prefix . $base . $part . $suffix;
-            $base .= $part . $join;
+        $defaultOpts = array(
+                'root'   => null,
+                'prefix' => '',
+                'join'   => '.',
+                'suffix' => '');
+        // Order of args for array_diff_key() is important:
+        $invalidOpts = array_diff_key($opts, $defaultOpts);
+        if (!empty($invalidOpts)) {
+            throw new Config_Exception('Invalid options: '
+                    . implode(", ", array_keys($invalidOpts)));
         }
-        return $keys;
+        // Order of args for array_merge() is important:
+        $opts = array_merge($defaultOpts, $opts);
+        extract($opts);
+
+        $parents = '';
+        $lineage = array();
+        if ($root) {
+            $lineage[] = $prefix . $root . $suffix;
+        }
+        foreach (explode(".", $environment) as $part) {
+            $lineage[] = $prefix . $parents . $part . $suffix;
+            $parents   .= $part . $join;
+        }
+        return $lineage;
     }
 }
-
-$env = new Config_Environment();
-$keys = $env->getAncestors("dev.mariano.home", ".", "/Users/mariano/Code/gen/config/", ".ini");
-
-$env = new Config_Environment("dev.mariano.home");
-$keys = $env->getAncestors(
-            "dev.mariano.home",
-            ".",
-            "/Users/mariano/Code/gen/config/",
-            ".ini");
-print_r($keys);
-
-$keys = $env->getAncestors(
-            "dev.mariano.home",
-            "/",
-            "/Users/mariano/Code/gen/config/",
-            ".ini");
-print_r($keys);
-
-$keys = $env->getAncestors("dev.mariano.home");
-print_r($keys);
