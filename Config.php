@@ -7,8 +7,27 @@ class Config
     const TYPE_DELIMITER = ",";
     const LIST_DELIMITER = ",";
 
-    private $keys = array();
+    /**
+     * @var Config Instance of self (used for singleton type access).
+     */
     private static $instance = null;
+
+    /**
+     * @var array<string:mixed> Map of configuration options.
+     */
+    private $keys = array();
+
+    /**
+     * @var Config_Storage_Interface Storage engine from which environment
+     *                               specs will be fetched.
+     */
+    private $source;
+
+    /**
+     * @var Config_Storage_Interface Storage engine where parsed environment
+     *                               specs are cached.
+     */
+    private $cache;
 
     /**
      * You probably want the Config::getInstance() method instead. It works
@@ -50,18 +69,38 @@ class Config
         return $this->keys;
     }
 
-    public function load($storage)
+    public function load($environments)
     {
-        if (!is_array($storage)) {
-            $storage = array($storage);
+        if (!is_array($environments)) {
+            $environments = array($environments);
         }
 
-        foreach ($storage as $s) {
-            $spec       = $s->fetch();
+        // HOOK: cache get
+        if ($this->cache) {
+            try {
+                $cacheKey   = md5(serialize($environments));
+                $this->keys = unserialize($this->cache->get($cacheKey));
+                //$this->keys = unserialize($this->cache->get(md5(serialize($environments))));
+                return $this;
+            } catch (Config_Exception $e) {
+            }
+        }
+
+        foreach ($environments as $environment) {
+            $spec       = $this->source->get($environment);
             $config     = $this->parseSpec($spec);
             $this->keys = array_merge($this->keys, $config);
         }
-        return $this->keys;
+
+        // HOOK: cache set
+        if ($this->cache) {
+            $cacheKey  = md5(serialize($environments));
+            $cacheData = serialize($this->keys);
+            $this->cache->set($cacheKey, $cacheData);
+            //$this->cache->set(md5(serialize($environments)), $this->toSpec());
+        }
+
+        return $this;
     }
 
     public function parseSpec($spec)
@@ -97,6 +136,11 @@ class Config
             $config[$key] = $value;
         }
         return $config;
+    }
+
+    public function toSpec()
+    {
+        //todo: convert this Config into a spec formatted text string safe for caching
     }
 
     /**
@@ -177,5 +221,27 @@ class Config
                 break;
         }
         return $value;
+    }
+
+    public function setSource(Config_Storage_Interface $source)
+    {
+        $this->source = $source;
+        return $this;
+    }
+
+    public function getSource()
+    {
+        return $this->source;
+    }
+
+    public function setCache(Config_Storage_Interface $cache)
+    {
+        $this->cache = $cache;
+        return $this;
+    }
+
+    public function getCache()
+    {
+        return $this->cache;
     }
 }

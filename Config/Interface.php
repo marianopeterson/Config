@@ -19,17 +19,18 @@ interface Config_Interface
     public function get($key);
 
     /**
-     * Loads configuration specs from a set of storage nodes. The first spec
+     * Loads configuration specs for a set of environments. The first spec
      * serves as the base and subsequent specs override the previous ones.
      *
-     * If called again, the new storage spec overrides the keys that have
-     * already been set. Call reset() to clear the previously set keys.
+     * If load() is called again, the new environment overrides the keys that
+     * were set earlier.
      *
-     * @param Config_Storage_Interface|array<Config_Storage_Interface>
+     * @param Config_Storage_Interface $environment Environment whose config
+     *                                              spec will be loaded.
      *
-     * @return array Map of configuration keys and values.
+     * @return Config_Interface Reference to itself (supports fluent interface).
      */
-    public function load($storage);
+    public function load($environments);
 
     /**
      * Parses a config spec and returns the result as an array.

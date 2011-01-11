@@ -2,19 +2,38 @@
 class Config_Storage_File
 implements Config_Storage_Interface
 {
-    public function __construct($filePath)
+    private $root;
+
+    public function __construct(array $opts = array())
     {
-        $this->filePath = $filePath;
+        $default = array('root' => '');
+        $invalid = array_diff_key($opts, $default);
+        if ($invalid) {
+            throw new Config_Exception(sprintf("Invalid options: %s",
+                        implode(", ", $invalid)));
+        }
+        $opts = array_merge($default, $opts);
+        $this->root = $opts['root'];
     }
 
-    public function fetch()
+    public function set($key, $value)
     {
-        if (!file_exists($this->filePath)) {
-            throw new Config_Exception("File does not exist: " . $this->filePath);
+        $r = file_put_contents($this->root . $key, $value);
+        if ($r === false) {
+            return false;
         }
-        if (!is_readable($this->filePath)) {
-            throw new Config_Exception("File is not readable: " . $this->filePath);
+        return true;
+    }
+
+    public function get($key)
+    {
+        $filePath = $this->root . $key;
+        if (!file_exists($filePath)) {
+            throw new Config_Exception("File does not exist: " . $filePath);
         }
-        return file_get_contents($this->filePath);
+        if (!is_readable($filePath)) {
+            throw new Config_Exception("File is not readable: " . $filePath);
+        }
+        return file_get_contents($filePath);
     }
 }
