@@ -21,10 +21,8 @@ interface Config_Storage_Interface
     /**
      * Fetches an unparsed config spec from a storage node.
      *
-     * @throws Config_Exception if the key is not accessible or isn't set.
-     *
      * @param string $key Identifier for the data to be fetched.
-     * @return mixed Data at $key.
+     * @return mixed Data at $key, or boolean FALSE if key is not accessible.
      */
     public function get($key);
 }

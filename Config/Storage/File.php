@@ -18,8 +18,9 @@ implements Config_Storage_Interface
 
     public function set($key, $value)
     {
-        $r = file_put_contents($this->root . $key, $value);
-        if ($r === false) {
+        try {
+            $r = file_put_contents($this->root . $key, $value);
+        } catch (Exception $e) {
             return false;
         }
         return true;
@@ -28,11 +29,8 @@ implements Config_Storage_Interface
     public function get($key)
     {
         $filePath = $this->root . $key;
-        if (!file_exists($filePath)) {
-            throw new Config_Exception("File does not exist: " . $filePath);
-        }
         if (!is_readable($filePath)) {
-            throw new Config_Exception("File is not readable: " . $filePath);
+            return false;
         }
         return file_get_contents($filePath);
     }

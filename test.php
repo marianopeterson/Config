@@ -24,7 +24,7 @@ $config = Config::getInstance()
                     'host'     => '127.0.0.1',
                     'username' => 'test',
                     'password' => 'test',
-                    'database' => 'tmp',
+                    'database' => 'test',
                     'table'    => 'config_environments')))
     ->setCache(new Config_Storage_File(array('root' => "/tmp/")))
     ->load($environments);

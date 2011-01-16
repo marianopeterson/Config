@@ -76,28 +76,30 @@ class Config
         }
 
         // HOOK: cache get
-        if ($this->cache) {
-            try {
-                $cacheKey   = md5(serialize($environments));
-                $this->keys = unserialize($this->cache->get($cacheKey));
-                //$this->keys = unserialize($this->cache->get(md5(serialize($environments))));
+        $cacheEngine = $this->getCache();
+        if ($cacheEngine) {
+            $cacheKey  = md5(serialize($environments));
+            $cacheData = $cacheEngine->get($cacheKey);
+            if ($cacheData !== false) {
+                $this->keys = unserialize($cacheData);
                 return $this;
-            } catch (Config_Exception $e) {
             }
         }
 
+        if (!$this->getSource()) {
+            throw new Config_Exception("Must set config source before loading. See ->source().");
+        }
         foreach ($environments as $environment) {
-            $spec       = $this->source->get($environment);
+            $spec       = $this->getSource()->get($environment);
             $config     = $this->parseSpec($spec);
             $this->keys = array_merge($this->keys, $config);
         }
 
         // HOOK: cache set
-        if ($this->cache) {
+        if ($cacheEngine) {
             $cacheKey  = md5(serialize($environments));
             $cacheData = serialize($this->keys);
-            $this->cache->set($cacheKey, $cacheData);
-            //$this->cache->set(md5(serialize($environments)), $this->toSpec());
+            $cacheEngine->set($cacheKey, $cacheData);
         }
 
         return $this;
@@ -136,11 +138,6 @@ class Config
             $config[$key] = $value;
         }
         return $config;
-    }
-
-    public function toSpec()
-    {
-        //todo: convert this Config into a spec formatted text string safe for caching
     }
 
     /**
@@ -218,7 +215,6 @@ class Config
             case 'string':
             default:
                 $value = (string) $value;
-                break;
         }
         return $value;
     }

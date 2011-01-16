@@ -50,7 +50,7 @@ implements Config_Storage_Interface
         $m->addServers($this->servers);
         $data = $m->get($key);
         if ($data === false) {
-            throw new Config_Exception(""); //todo: error message
+            return false;
         }
         return $data;
     }

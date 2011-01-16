@@ -2,6 +2,8 @@
 $root = dirname(dirname(__FILE__));
 require_once($root . "/Config.php");
 require_once($root . "/Config/Exception.php");
+require_once($root . "/Config/Storage/Interface.php");
+require_once($root . "/Config/Storage/File.php");
 
 class ConfigTest extends PHPUnit_Framework_TestCase
 {
@@ -12,57 +14,139 @@ class ConfigTest extends PHPUnit_Framework_TestCase
         $this->assertSame($a, $b);
     }
 
-    public function testLoadWithSingleStorage()
+    public function testLoadWithSource()
     {
         $configData = array(
             "db.host" => "10.0.0.1",
             "db.port" => "3306");
 
-        $storage = $this->getMock('Config_Storage_File', array('fetch'));
+        $storage = $this->getMock('Config_Storage_File', array('get'));
         $storage->expects($this->any())
-                ->method('fetch')
+                ->method('get')
                 ->will($this->returnValue($configData));
 
-        $config = $this->getMock('Config', array('parseSpec'));
+        $config = $this->getMock('Config', array('parseSpec', 'getSource'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
+        $config->expects($this->any())
+               ->method('getSource')
+               ->will($this->returnValue($storage));
 
-        $actual = $config->load($storage);
+        $actual = $config->load('foo')->toArray();
         $this->assertEquals($configData, $actual);
     }
 
-    public function testLoadWithMultipleStorage()
+    public function testLoadWithoutSource()
     {
-        $configData1 = array(
+        $configData = array(
             "db.host" => "10.0.0.1",
-            "db.port" => 3306);
+            "db.port" => "3306");
 
-        $configData2 = array(
-            "db.port" => 4000,
-            "db.name" => "testdb");
+        $storage = $this->getMock('Config_Storage_File', array('get'));
+        $storage->expects($this->any())
+                ->method('get')
+                ->will($this->returnValue($configData));
 
-        $storage1 = $this->getMock('Config_Storage_File', array('fetch'));
-        $storage1->expects($this->any())
-                 ->method('fetch')
-                 ->will($this->returnValue($configData1));
-
-        $storage2 = $this->getMock('Config_Storage_File', array('fetch'));
-        $storage2->expects($this->any())
-                 ->method('fetch')
-                 ->will($this->returnValue($configData2));
-        
-        $config = $this->getMock('Config', array('parseSpec'));
+        $config = $this->getMock('Config', array('parseSpec', 'getSource'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
+        $config->expects($this->any())
+               ->method('getSource')
+               ->will($this->returnValue(null));
 
-        $actual = $config->load(array($storage1, $storage2));
-        $expected = array(
+        $this->setExpectedException('Config_Exception');
+        $actual = $config->load('foo')->toArray();
+    }
+
+    public function testLoadWithWarmCache()
+    {
+        $configData = array(
             "db.host" => "10.0.0.1",
-            "db.port" => "4000",
-            "db.name" => "testdb");
-        $this->assertEquals($expected, $actual);
+            "db.port" => "3306");
+
+        $storage = $this->getMock('Config_Storage_File', array('get', 'set'));
+        $storage->expects($this->any())
+                ->method('get')
+                ->will($this->returnValue(serialize($configData)));
+        $storage->expects($this->any())
+                ->method('set')
+                ->will($this->returnValue(true));
+
+        $config = $this->getMock('Config', array('parseSpec', 'getCache'));
+        $config->expects($this->any())
+               ->method('parseSpec')
+               ->will($this->returnArgument(0));
+        $config->expects($this->any())
+               ->method('getCache')
+               ->will($this->returnValue($storage));
+
+        $actual = $config->load('foo')->toArray();
+        $this->assertEquals($configData, $actual);
+    }
+
+    public function testLoadWithColdCache()
+    {
+        $configData = array(
+            "db.host" => "10.0.0.1",
+            "db.port" => "3306");
+
+        $cache = $this->getMock('Config_Storage_File', array('get', 'set'));
+        $cache->expects($this->any())
+              ->method('get')
+              ->will($this->returnValue(false));
+        $cache->expects($this->any())
+              ->method('set')
+              ->will($this->returnValue(true));
+
+        $source = $this->getMock('Config_Storage_File', array('get'));
+        $source->expects($this->any())
+               ->method('get')
+               ->will($this->returnValue($configData));
+
+        $config = $this->getMock('Config', array('parseSpec', 'getSource', 'getCache'));
+        $config->expects($this->any())
+               ->method('parseSpec')
+               ->will($this->returnArgument(0));
+        $config->expects($this->any())
+               ->method('getSource')
+               ->will($this->returnValue($source));
+        $config->expects($this->any())
+               ->method('getCache')
+               ->will($this->returnValue($cache));
+
+        $actual = $config->load('foo')->toArray();
+        $this->assertEquals($configData, $actual);
+    }
+    public function testGet()
+    {
+        $configData = array(
+            "db.host" => "10.0.0.1",
+            "db.port" => "3306");
+
+        $storage = $this->getMock('Config_Storage_File', array('get'));
+        $storage->expects($this->any())
+                ->method('get')
+                ->will($this->returnValue($configData));
+
+        $config = $this->getMock('Config', array('parseSpec', 'getSource'));
+        $config->expects($this->any())
+               ->method('parseSpec')
+               ->will($this->returnArgument(0));
+        $config->expects($this->any())
+               ->method('getSource')
+               ->will($this->returnValue($storage));
+
+        $config->load('foo');
+        $this->assertEquals('3306', $config->get('db.port'));
+    }
+
+    public function testGetWithInvalidKey()
+    {
+        $config = new Config();
+        $this->setExpectedException('Config_Exception');
+        $config->get("invalid.key");
     }
 
     public function testParseSpec()
@@ -265,5 +349,25 @@ EOT;
         foreach ($actual as $int) {
             $this->assertInternalType('int', $int);
         }
+    }
+
+    public function testSourceAccessors()
+    {
+        $config    = new Config();
+        $storage   = new Config_Storage_File(array('root' => '/tmp/foo'));
+        $setResult = $config->setSource($storage);
+
+        $this->assertType('Config', $setResult);
+        $this->assertEquals($config->getSource(), $storage);
+    }
+
+    public function testCacheAccessors()
+    {
+        $config    = new Config();
+        $storage   = new Config_Storage_File(array('root' => '/tmp/foo'));
+        $setResult = $config->setCache($storage);
+
+        $this->assertType('Config', $setResult);
+        $this->assertEquals($config->getCache(), $storage);
     }
 }

@@ -54,10 +54,8 @@ implements Config_Storage_Interface
                     mysql_real_escape_string($this->table),
                     mysql_real_escape_string($key));
         $res = mysql_query($sql, $conn);
-        if (!$res) {
-            throw new Config_Exception(sprintf(
-                    "Unable to fetch key (%s) due to error: %s",
-                    $key, mysql_error($conn)));
+        if ($res === false) {
+            return false;
         }
         return mysql_result($res, 0);
     }

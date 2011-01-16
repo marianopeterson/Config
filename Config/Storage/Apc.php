@@ -20,7 +20,7 @@ implements Config_Storage_Interface
     {
         $store = apc_fetch($key);
         if ($store === false) {
-            throw new Config_Exception("APC key does not exist: " . $key);
+            return false;
         }
         return $store['data'];
     }
