@@ -1,5 +1,4 @@
-coverage_dir=coverage
-dox_dir=dox
+test_coverage_dir=coverage
 tests_dir=tests
 
 # PHONY is used to specify targets that must run regardless of whether
@@ -8,13 +7,12 @@ tests_dir=tests
 
 clean: clean-test
 clean-test:
-	rm -rf ${coverage_dir}
-	rm -rf ${dox_dir}
+	rm -rf ${test_coverage_dir}
 
+tests: test
 test: clean-test
-	mkdir ${coverage_dir}
-	mkdir ${dox_dir}
-	phpunit --coverage-html="${coverage_dir}" --testdox-html="${dox_dir}/dox.html" ${tests_dir} 
+	mkdir ${test_coverage_dir}
+	phpunit --coverage-html="${test_coverage_dir}/html" --testdox-html="${test_coverage_dir}/dox.html" ${tests_dir}
 
 style:
 	phpcs --standard=PEAR .
