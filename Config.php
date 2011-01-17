@@ -113,6 +113,7 @@ class Config
             $line = trim($line);
             // Skip comment lines
             if (empty($line) ||
+                    substr($line, 0, 1) == ';' ||
                     substr($line, 0, 1) == '#' ||
                     substr($line, 0, 2) == '//') {
                 continue;
