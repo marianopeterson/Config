@@ -1,33 +1,30 @@
 TODO:
-build a caching mechanism
+ *  Support pear packaging
 
-    1. Cache the parsed specs based on the environment name that created
-       the Config. For example, you shouldn't have to reparse the results
-       for "dev.mariano".
+ *  Support inline comments.
+    Goal:   I want to be able to add comments to a particular line
+    Example:
+        public_key = ~/.ssh/id_dsa.pub ;This is what I mean by an inline comment
+        public_key = ~/.ssh/id_dsa.pub #This is another example
+        public_key = ~/.ssh/id_dsa.pub //And the last example I can think of
 
-    2. Cache the fetched specs for each environment in a local file (to
-       protect against remote storage becoming unavailable).
-
-build a loading mechanism that translates an environment name into a set of Config_Storage_Interface instances.
-
+ *  Support multiple levels of cache.
+    Goal: I want to benefit from the high speed of volatile caches like APC and
+          Memcache, but protect myself from incuring the penalty of reparsing
+          configurations from their source.
+    Example: // Add caches in the order they should be tried
+             $config = Config::getInstanct();
+             $config->setSource(new Config_Storage_MySQL())
+                    ->addCache(new Config_Storage_APC())    // Try APC first
+                    ->addCache(new Config_Storage_File());  // Fall back to File
+                
 
 GENERAL PROCESS:
-store source
+access config data from source
 load(sourceList):
-    foreach part in sourceList:
-        this->loadFromSource(part)  // splits line using LINE_DELIMITER,
-                                    // removes comment lines and blank lines
-            foreach line in part:
-                parse value(line)   // parse type from key, cast value to type
+    foreach source in sourceList:
+        this->loadFromSource(source)    // splits lines using LINE_DELIMITER,
+                                        // ignores comment lines and blank lines
+            foreach line in source:
+                parse key, type, value from line
         merge result into this->configData
-
-
-// Interface to read in a multiline text blob of (key,value) pairs
-//      Class to read this from a database
-//      Class to read this from a file
-//      Class to read this from memcache
-//      Class to read this from APC
-// Class to parse each line (skip comments, convert types, unescape delimiters)
-// Class to store the results (and override keys with new data sets)
-
-// Class to determine the different sources that should be loaded based on an environment name
