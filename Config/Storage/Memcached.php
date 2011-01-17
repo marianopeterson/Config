@@ -37,11 +37,7 @@ implements Config_Storage_Interface
         $m = new Memcached();
         $m->addServers($this->servers);
         $r = $m->set($key, $value);
-        if ($r === false) {
-            throw new Config_Exception(sprintf(
-                        "Unable to set key: %s. (%s)",
-                        $key, $m->getResultMessage()));
-        }
+        return $r;
     }
 
     public function get($key)

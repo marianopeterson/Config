@@ -1,5 +1,5 @@
 <?php
-class Config_Storage_File
+class Config_Storage_Apc
 implements Config_Storage_Interface
 {
     public function __construct(array $opts = array())
@@ -11,9 +11,7 @@ implements Config_Storage_Interface
         $result = apc_store($key, array(
                     'data'    => $value,
                     'written' => time()));
-        if ($result === false) {
-            throw new Config_Exception("Unable to set key: $key");
-        }
+        return $result;
     }
 
     public function get($key)

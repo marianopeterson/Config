@@ -54,7 +54,7 @@ implements Config_Storage_Interface
                     mysql_real_escape_string($this->table),
                     mysql_real_escape_string($key));
         $res = mysql_query($sql, $conn);
-        if ($res === false) {
+        if ($res === false || mysql_num_rows($res) == 0) {
             return false;
         }
         return mysql_result($res, 0);
