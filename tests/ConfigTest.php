@@ -25,12 +25,12 @@ class ConfigTest extends PHPUnit_Framework_TestCase
                 ->method('get')
                 ->will($this->returnValue($configData));
 
-        $config = $this->getMock('Config', array('parseSpec', 'getSource'));
+        $config = $this->getMock('Config', array('parseSpec', 'getSourceEngine'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
         $config->expects($this->any())
-               ->method('getSource')
+               ->method('getSourceEngine')
                ->will($this->returnValue($storage));
 
         $actual = $config->load('foo')->toArray();
@@ -48,42 +48,16 @@ class ConfigTest extends PHPUnit_Framework_TestCase
                 ->method('get')
                 ->will($this->returnValue($configData));
 
-        $config = $this->getMock('Config', array('parseSpec', 'getSource'));
+        $config = $this->getMock('Config', array('parseSpec', 'getSourceEngine'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
         $config->expects($this->any())
-               ->method('getSource')
+               ->method('getSourceEngine')
                ->will($this->returnValue(null));
 
         $this->setExpectedException('Config_Exception');
         $actual = $config->load('foo')->toArray();
-    }
-
-    public function testLoadWithWarmCache()
-    {
-        $configData = array(
-            "db.host" => "10.0.0.1",
-            "db.port" => "3306");
-
-        $storage = $this->getMock('Config_Storage_File', array('get', 'set'));
-        $storage->expects($this->any())
-                ->method('get')
-                ->will($this->returnValue(serialize($configData)));
-        $storage->expects($this->any())
-                ->method('set')
-                ->will($this->returnValue(true));
-
-        $config = $this->getMock('Config', array('parseSpec', 'getCache'));
-        $config->expects($this->any())
-               ->method('parseSpec')
-               ->will($this->returnArgument(0));
-        $config->expects($this->any())
-               ->method('getCache')
-               ->will($this->returnValue($storage));
-
-        $actual = $config->load('foo')->toArray();
-        $this->assertEquals($configData, $actual);
     }
 
     public function testLoadWithColdCache()
@@ -105,20 +79,90 @@ class ConfigTest extends PHPUnit_Framework_TestCase
                ->method('get')
                ->will($this->returnValue($configData));
 
-        $config = $this->getMock('Config', array('parseSpec', 'getSource', 'getCache'));
+        $config = $this->getMock('Config',
+                array('parseSpec', 'getSourceEngine', 'getCacheEngines'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
         $config->expects($this->any())
-               ->method('getSource')
+               ->method('getSourceEngine')
                ->will($this->returnValue($source));
         $config->expects($this->any())
-               ->method('getCache')
-               ->will($this->returnValue($cache));
+               ->method('getCacheEngines')
+               ->will($this->returnValue(array($cache)));
 
         $actual = $config->load('foo')->toArray();
         $this->assertEquals($configData, $actual);
     }
+
+    public function testLoadWithWarmCache()
+    {
+        $configData = array(
+            "db.host" => "10.0.0.1",
+            "db.port" => "3306");
+
+        $storage = $this->getMock('Config_Storage_File', array('get', 'set'));
+        $storage->expects($this->any())
+                ->method('get')
+                ->will($this->returnValue(serialize($configData)));
+        $storage->expects($this->any())
+                ->method('set')
+                ->will($this->returnValue(true));
+
+        $config = $this->getMock('Config', array('parseSpec', 'getCacheEngines'));
+        $config->expects($this->any())
+               ->method('parseSpec')
+               ->will($this->returnArgument(0));
+        $config->expects($this->any())
+               ->method('getCacheEngines')
+               ->will($this->returnValue(array($storage)));
+
+        $actual = $config->load('foo')->toArray();
+        $this->assertEquals($configData, $actual);
+    }
+
+    /**
+     * Prove that setting the reload flag in the load() method causes
+     * us to access the source even when the cache has contnet.
+     */
+    public function testLoadWithWarmCacheAndReload()
+    {
+        $configData = array(
+            "db.host" => "10.0.0.1",
+            "db.port" => "3306");
+
+        $source = $this->getMock('Config_Storage_File', array('get'));
+        // We must get() from source:
+        $source->expects($this->atLeastOnce())
+               ->method('get')
+               ->will($this->returnValue('any-string'));
+
+        $cache = $this->getMock('Config_Storage_File', array('get', 'set'));
+        // We must not try to get() from cache:
+        $cache->expects($this->never())
+              ->method('get')
+              ->will($this->returnValue(serialize($configData)));
+        // We must set() the cache after getting from source:
+        $cache->expects($this->atLeastOnce())
+              ->method('set')
+              ->will($this->returnValue(true));
+
+        $config = $this->getMock('Config',
+                array('getSourceEngine', 'getCacheEngines', 'parseSpec'));
+        $config->expects($this->any())
+               ->method('getSourceEngine')
+               ->will($this->returnValue($source));
+        $config->expects($this->any())
+               ->method('getCacheEngines')
+               ->will($this->returnValue(array($cache)));
+        $config->expects($this->once())
+               ->method('parseSpec')
+               ->will($this->returnValue($configData));
+
+        $actual = $config->load('foo', true)->toArray();
+        $this->assertEquals($configData, $actual);
+    }
+
     public function testGet()
     {
         $configData = array(
@@ -130,12 +174,12 @@ class ConfigTest extends PHPUnit_Framework_TestCase
                 ->method('get')
                 ->will($this->returnValue($configData));
 
-        $config = $this->getMock('Config', array('parseSpec', 'getSource'));
+        $config = $this->getMock('Config', array('parseSpec', 'getSourceEngine'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
         $config->expects($this->any())
-               ->method('getSource')
+               ->method('getSourceEngine')
                ->will($this->returnValue($storage));
 
         $config->load('foo');
@@ -355,19 +399,162 @@ EOT;
     {
         $config    = new Config();
         $storage   = new Config_Storage_File(array('root' => '/tmp/foo'));
-        $setResult = $config->setSource($storage);
+        $setResult = $config->setSourceEngine($storage);
 
         $this->assertType('Config', $setResult);
-        $this->assertEquals($config->getSource(), $storage);
+        $this->assertEquals($config->getSourceEngine(), $storage);
     }
 
     public function testCacheAccessors()
     {
         $config    = new Config();
         $storage   = new Config_Storage_File(array('root' => '/tmp/foo'));
-        $setResult = $config->setCache($storage);
+        $setResult = $config->addCacheEngine($storage);
 
         $this->assertType('Config', $setResult);
-        $this->assertEquals($config->getCache(), $storage);
+        $this->assertEquals($config->getCacheEngines(), array($storage));
+    }
+
+    public function testCacheWithMultipleEngines()
+    {
+        $configData = array(
+            "db.host" => "10.0.0.1",
+            "db.port" => "3306");
+
+        // MySQL canonical data store; we should never have to call get() on
+        // this because even though the APC cache will miss, the secondary
+        // File cache should hit (in our test case below).
+        $mysql = $this->getMock('Config_Storage_MySQL', array('get'));
+        $mysql->expects($this->never())
+              ->method('get')
+              ->will($this->returnValue(''));
+
+        // APC cache will miss; we must call get() atLeastOnce to see this.
+        // We must also call set() atLeastOnce to prove we repopulated the
+        // APC cache after the File cache.
+        $apc = $this->getMock('Config_Storage_APC', array('get', 'set'));
+        $apc->expects($this->atLeastOnce())
+            ->method('get')
+            ->will($this->returnValue(false));
+        $apc->expects($this->atLeastOnce())
+            ->method('set')
+            ->will($this->returnValue(true));
+
+        // File cache will hit; we should call get() atLeastOnce
+        // Since this cache hit, we should never call set() on it.
+        $file = $this->getMock('Config_Storage_File', array('get'));
+        $file->expects($this->atLeastOnce())
+             ->method('get')
+             ->will($this->returnValue(serialize($configData)));
+        $file->expects($this->never())
+             ->method('set')
+             ->will($this->returnValue(true));
+
+        $config = $this->getMock('Config', array('getCacheEngines', 'getSourceEngine'));
+        $config->expects($this->never())
+               ->method('getSourceEngine')
+               ->will($this->returnValue($mysql));
+        $config->expects($this->any())
+               ->method('getCacheEngines')
+               ->will($this->returnValue(array($apc, $file)));
+        $config->load('foo');
+        $actual = $config->toArray();
+        $this->assertEquals($configData, $actual);
+    }
+
+    /**
+     * Prove that when all cache engines miss (get() returns false), we 
+     * update all cache engines (call set()) after fetching from source.
+     */
+    public function testCacheSetWithMultipleEngines()
+    {
+        $configData = array(
+            "db.host" => "10.0.0.1",
+            "db.port" => "3306");
+
+        // Canonical data store; must call get() once
+        $mysql = $this->getMock('Config_Storage_MySQL', array('get'));
+        $mysql->expects($this->once())
+              ->method('get')
+              ->will($this->returnValue('any-string'));
+
+        // APC cache will miss on get(), then must call set() once.
+        $apc = $this->getMock('Config_Storage_APC', array('get', 'set'));
+        $apc->expects($this->atLeastOnce())
+            ->method('get')
+            ->will($this->returnValue(false));
+        $apc->expects($this->once())
+            ->method('set')
+            ->will($this->returnValue(true));
+
+        // File cache will miss on get(), then must call set() once.
+        $file = $this->getMock('Config_Storage_File', array('get', 'set'));
+        $file->expects($this->atLeastOnce())
+             ->method('get')
+             ->will($this->returnValue(false));
+        $file->expects($this->atLeastOnce())
+             ->method('set')
+             ->will($this->returnValue(true));
+
+        // Setup the config mock
+        $config = $this->getMock('Config',
+                array('getCacheEngines', 'getSourceEngine', 'parseSpec'));
+        $config->expects($this->any())
+               ->method('getSourceEngine')
+               ->will($this->returnValue($mysql));
+        $config->expects($this->any())
+               ->method('getCacheEngines')
+               ->will($this->returnValue(array($apc, $file)));
+        $config->expects($this->any())
+               ->method('parseSpec')
+               ->will($this->returnValue($configData));
+
+        $config->load('foo');
+        $actual = $config->toArray();
+        $this->assertEquals($configData, $actual);
+    }
+
+    /**
+     * Prove that all cache engines are updated on setCache()
+     */
+    public function testSetCache()
+    {
+        $s1 = $this->getMock('Config_Storage_File', array('set'));
+        $s1->expects($this->once())
+           ->method('set')
+           ->will($this->returnValue(true));
+        $s2 = $this->getMock('Config_Storage_File', array('set'));
+        $s2->expects($this->once())
+           ->method('set')
+           ->will($this->returnValue(true));
+
+        $config = $this->getMock('Config', array('getCacheEngines'));
+        $config->expects($this->any())
+               ->method('getCacheEngines')
+               ->will($this->returnValue(array($s1, $s2)));
+        $actual = $config->setCache('some-key', 'non-false-content');
+        $this->assertTrue($actual);
+    }
+
+    /**
+     * Prove that setCache() calls set() on all cache engines even if one fails.
+     */
+    public function testSetCacheWithFailures()
+    {
+        $s1 = $this->getMock('Config_Storage_File', array('set'));
+        $s1->expects($this->once())
+           ->method('set')
+           ->will($this->returnValue(false));
+        $s2 = $this->getMock('Config_Storage_File', array('set'));
+        $s2->expects($this->once())
+           ->method('set')
+           ->will($this->returnValue(true));
+
+        $config = $this->getMock('Config', array('getCacheEngines'));
+        $config->expects($this->any())
+               ->method('getCacheEngines')
+               ->will($this->returnValue(array($s1, $s2)));
+        $actual = $config->setCache('some-key', 'non-false-content');
+        $this->assertFalse($actual);
     }
 }

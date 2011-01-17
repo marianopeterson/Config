@@ -8,16 +8,6 @@ TODO:
         public_key = ~/.ssh/id_dsa.pub #This is another example
         public_key = ~/.ssh/id_dsa.pub //And the last example I can think of
 
- *  Support multiple levels of cache.
-    Goal: I want to benefit from the high speed of volatile caches like APC and
-          Memcache, but protect myself from incuring the penalty of reparsing
-          configurations from their source.
-    Example: // Add caches in the order they should be tried
-             $config = Config::getInstanct();
-             $config->setSource(new Config_Storage_MySQL())
-                    ->addCache(new Config_Storage_APC())    // Try APC first
-                    ->addCache(new Config_Storage_File());  // Fall back to File
-                
 
 GENERAL PROCESS:
 access config data from source

@@ -24,10 +24,14 @@ class Config
     private $source;
 
     /**
-     * @var Config_Storage_Interface Storage engine where parsed environment
-     *                               specs are cached.
+     * @var array<Config_Storage_Interface> List of storage engines from which
+     *                                      to try and fetch parsed config
+     *                                      specs for environments. The storage
+     *                                      engines are queried sequentially
+     *                                      using the Chain of Responsibility
+     *                                      pattern.
      */
-    private $cache;
+    private $cache = array();
 
     /**
      * You probably want the Config::getInstance() method instead. It works
@@ -56,6 +60,12 @@ class Config
         return self::$instance;
     }
 
+    /**
+     * Fetch a key from the Config object.
+     *
+     * @throws Config_Exception If the key is not defined.
+     * @return mixed The requested key.
+     */
     public function get($key)
     {
         if (!isset($this->keys[$key])) {
@@ -64,47 +74,67 @@ class Config
         return $this->keys[$key];
     }
 
+    /**
+     * Get the Config object's key-value pairs as an associative array.
+     *
+     * @return array
+     */
     public function toArray()
     {
         return $this->keys;
     }
 
-    public function load($environments)
+    /**
+     * Fetches, parses, and loads config specs for the given environments into
+     * this config object.
+     *
+     * @param string|array<string> $environments List of environment names
+     *                                           whose config specs will be
+     *                                           fetched, parsed, and loaded
+     *                                           into this config object.
+     * @param bool                 $reload       Set True to skip cache and
+     *                                           reload spec from source.
+     *
+     * @return Config (supports fluent interface)
+     */
+    public function load($environments, $reload=false)
     {
         if (!is_array($environments)) {
             $environments = array($environments);
         }
 
         // HOOK: cache get
-        $cacheEngine = $this->getCache();
-        if ($cacheEngine) {
-            $cacheKey  = md5(serialize($environments));
-            $cacheData = $cacheEngine->get($cacheKey);
-            if ($cacheData !== false) {
-                $this->keys = unserialize($cacheData);
+        $cacheKey = md5(serialize($environments));
+        if (!$reload) {
+            $content  = $this->getCache($cacheKey);
+            if ($content !== false) {
+                $this->keys = unserialize($content);
                 return $this;
             }
         }
 
-        if (!$this->getSource()) {
+        if (!$this->getSourceEngine()) {
             throw new Config_Exception("Must set config source before loading. See ->source().");
         }
         foreach ($environments as $environment) {
-            $spec       = $this->getSource()->get($environment);
+            // HOOK: source get
+            $spec       = $this->getSourceEngine()->get($environment);
             $config     = $this->parseSpec($spec);
             $this->keys = array_merge($this->keys, $config);
         }
 
         // HOOK: cache set
-        if ($cacheEngine) {
-            $cacheKey  = md5(serialize($environments));
-            $cacheData = serialize($this->keys);
-            $cacheEngine->set($cacheKey, $cacheData);
-        }
+        $this->setCache($cacheKey, serialize($this->keys));
 
         return $this;
     }
 
+    /**
+     * Parses a config spec into a set of key-value pairs.
+     *
+     * @param string $spec The raw config spec.
+     * @return array Map of key-value pairs.
+     */
     public function parseSpec($spec)
     {
         $lines  = explode(self::LINE_DELIMITER, $spec);
@@ -220,25 +250,107 @@ class Config
         return $value;
     }
 
-    public function setSource(Config_Storage_Interface $source)
+    /**
+     * Set the storage engine that will be used to access unparsed config specs.
+     *
+     * @param Config_Storage_Interface $source Storage engine used to access
+     *                                         unparsed config specs.
+     * @return Config (supports fluent interface)
+     */
+    public function setSourceEngine(Config_Storage_Interface $source)
     {
         $this->source = $source;
         return $this;
     }
 
-    public function getSource()
+    /**
+     * Get the storage engine that will be used to access unparsed config specs.
+     *
+     * @return Config_Storage_Interface
+     */
+    public function getSourceEngine()
     {
         return $this->source;
     }
 
-    public function setCache(Config_Storage_Interface $cache)
+    /**
+     * Add a storage engine to the list of cache engines that will be queried.
+     * Caches are queried in the order they are added.
+     *
+     * @param Config_Storage_Interface $cache Storage engine to use for cache.
+     * @return Config (Supports fluent interface)
+     */
+    public function addCacheEngine(Config_Storage_Interface $cache)
     {
-        $this->cache = $cache;
+        $this->cache[] = $cache;
         return $this;
     }
 
-    public function getCache()
+    /**
+     * Get the list of storage engines used for cache. The engines must be
+     * accessed sequentially.
+     *
+     * @return array<Config_Storage_Interface>
+     */
+    public function getCacheEngines()
     {
         return $this->cache;
+    }
+
+    /**
+     * Attempts to fetch a key from a list of cache engines.
+     * Engines that get a cache miss will automatically be
+     * repopulated by the first engine that gets a cache hit.
+     *
+     * @param string $key The cache key to lookup.
+     * @return mixed False on cache miss, otherwise the contents.
+     */
+    public function getCache($key)
+    {
+        $engines = $this->getCacheEngines();
+        if (empty($engines)) {
+            return false;
+        }
+
+        // Check caches for key
+        $hit = 0; // index of cache engine that hit
+        for ($i = 0; $i < count($engines); $i++) {
+            $content = $engines[$i]->get($key);
+            if ($content !== false) {
+                $hit = $i;
+                break;
+            }
+        }
+
+        // Set the cache key in the engines that missed
+        $this->setCache($key, $content, $hit);
+        return $content;
+    }
+
+    /**
+     * Writes the content to the key in each cache engine.
+     * Writing stops on the first engine that misses.
+     *
+     * @param string $key     Key to write to.
+     * @param mixed  $content Content to write.
+     * @param int    $limit   Max number of engines to update.
+     *
+     * @return bool True if all engines were updated.
+     */
+    public function setCache($key, $content, $limit=null)
+    {
+        $engines = $this->getCacheEngines();
+        if (empty($engines)) {
+            return false;
+        }
+        $engineCount = count($engines);
+        $limit       = ($limit === null) ? $engineCount : min($engineCount, $limit);
+        $success     = true;
+        for ($i = 0; $i < $limit; $i++) {
+            if (!$engines[$i]->set($key, $content)) {
+                $success = false;
+            }
+        }
+        return $success;
     }
 }
