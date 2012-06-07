@@ -1,6 +1,8 @@
 <?php
-class Config_Storage_Memcached
-implements Config_Storage_Interface
+namespace MP\Config\Storage;
+
+class MemcachedStorage
+implements StorageInterface
 {
     /**
      * @var array List of memcache servers to connect to. Sample:
@@ -17,16 +19,16 @@ implements Config_Storage_Interface
         $invalidOpts = array_diff_key($opts, $required);
         $missingOpts = array_diff_key($required, $opts);
         if ($invalidOpts) {
-            throw new Config_Exception(sprintf("Invalid parameters: %s",
+            throw new ConfigException(sprintf("Invalid parameters: %s",
                         implode(", ", $invalidOpts)));
         }
         if ($missingOpts) {
-            throw new Config_Exception(sprintf("Missing required parameters: %s",
+            throw new ConfigException(sprintf("Missing required parameters: %s",
                         implode(", ", $missingOpts)));
         }
         foreach ($opts['servers'] as $server) {
             if (count($server) != 2 && count($server) != 3) {
-                throw new Config_Exception("Invalid parameters.");
+                throw new ConfigException("Invalid parameters.");
             }
         }
         $this->servers = $opts['servers'];

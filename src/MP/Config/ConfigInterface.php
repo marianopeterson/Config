@@ -1,12 +1,13 @@
 <?php
+namespace MP\Config;
 
-interface Config_Interface
+interface ConfigInterface
 {
     /**
      * Gets a common instance of the Config object.
      * Implements the singleton pattern.
      *
-     * @return Config_Interface
+     * @return ConfigInterface
      */
     public function getInstance();
 
@@ -25,10 +26,10 @@ interface Config_Interface
      * If load() is called again, the new environment overrides the keys that
      * were set earlier.
      *
-     * @param Config_Storage_Interface $environment Environment whose config
+     * @param StorageInterface $environment Environment whose config
      *                                              spec will be loaded.
      *
-     * @return Config_Interface Reference to itself (supports fluent interface).
+     * @return ConfigInterface Reference to itself (supports fluent interface).
      */
     public function load($environments);
 

@@ -1,5 +1,7 @@
 <?php
-interface Config_Storage_Interface
+namespace MP\Config\Storage;
+
+interface StorageInterface
 {
     /**
      * Constructor options vary between implementations.

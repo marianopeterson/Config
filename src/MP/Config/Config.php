@@ -1,4 +1,7 @@
 <?php
+namespace MP\Config;
+
+use MP\Config\Storage\StorageInterface;
 
 class Config
 {
@@ -18,13 +21,13 @@ class Config
     private $keys = array();
 
     /**
-     * @var Config_Storage_Interface Storage engine from which environment
+     * @var StorageInterface Storage engine from which environment
      *                               specs will be fetched.
      */
     private $source;
 
     /**
-     * @var array<Config_Storage_Interface> List of storage engines from which
+     * @var array<StorageInterface> List of storage engines from which
      *                                      to try and fetch parsed config
      *                                      specs for environments. The storage
      *                                      engines are queried sequentially
@@ -63,13 +66,13 @@ class Config
     /**
      * Fetch a key from the Config object.
      *
-     * @throws Config_Exception If the key is not defined.
+     * @throws ConfigException If the key is not defined.
      * @return mixed The requested key.
      */
     public function get($key)
     {
         if (!isset($this->keys[$key])) {
-            throw new Config_Exception("Undefined config key: $key");
+            throw new ConfigException("Undefined config key: $key");
         }
         return $this->keys[$key];
     }
@@ -114,7 +117,7 @@ class Config
         }
 
         if (!$this->getSourceEngine()) {
-            throw new Config_Exception("Must set config source before loading. See ->source().");
+            throw new ConfigException("Must set config source before loading. See ->source().");
         }
         foreach ($environments as $environment) {
             // HOOK: source get
@@ -149,7 +152,7 @@ class Config
                 continue;
             }
             if (strpos($line, self::KEY_DELIMITER) === false) {
-                throw new Config_Exception(sprintf(
+                throw new ConfigException(sprintf(
                             "Invalid configuration syntax (missing delimiter %s): %s",
                             self::KEY_DELIMITER,
                             $line));
@@ -253,11 +256,11 @@ class Config
     /**
      * Set the storage engine that will be used to access unparsed config specs.
      *
-     * @param Config_Storage_Interface $source Storage engine used to access
+     * @param StorageInterface $source Storage engine used to access
      *                                         unparsed config specs.
      * @return Config (supports fluent interface)
      */
-    public function setSourceEngine(Config_Storage_Interface $source)
+    public function setSourceEngine(StorageInterface $source)
     {
         $this->source = $source;
         return $this;
@@ -266,7 +269,7 @@ class Config
     /**
      * Get the storage engine that will be used to access unparsed config specs.
      *
-     * @return Config_Storage_Interface
+     * @return StorageInterface
      */
     public function getSourceEngine()
     {
@@ -277,10 +280,10 @@ class Config
      * Add a storage engine to the list of cache engines that will be queried.
      * Caches are queried in the order they are added.
      *
-     * @param Config_Storage_Interface $cache Storage engine to use for cache.
+     * @param StorageInterface $cache Storage engine to use for cache.
      * @return Config (Supports fluent interface)
      */
-    public function addCacheEngine(Config_Storage_Interface $cache)
+    public function addCacheEngine(StorageInterface $cache)
     {
         $this->cache[] = $cache;
         return $this;
@@ -290,7 +293,7 @@ class Config
      * Get the list of storage engines used for cache. The engines must be
      * accessed sequentially.
      *
-     * @return array<Config_Storage_Interface>
+     * @return array<StorageInterface>
      */
     public function getCacheEngines()
     {

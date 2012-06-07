@@ -1,6 +1,7 @@
 <?php
+namespace MP\Config;
 
-class Config_Environment
+class ConfigEnvironment
 {
     /**
      * Takes an environment name and translates it into a sequence of
@@ -29,7 +30,7 @@ class Config_Environment
         // Order of args for array_diff_key() is important:
         $invalidOpts = array_diff_key($opts, $defaultOpts);
         if (!empty($invalidOpts)) {
-            throw new Config_Exception('Invalid options: '
+            throw new ConfigException('Invalid options: '
                     . implode(", ", array_keys($invalidOpts)));
         }
         // Order of args for array_merge() is important:

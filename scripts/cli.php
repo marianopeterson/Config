@@ -1,13 +1,13 @@
 #!/usr/bin/env php
 <?php
-$root = dirname(__FILE__);
+$root = dirname(__FILE__) . '/MP/Config';
 require_once($root . '/Config.php');
-require_once($root . '/Config/Environment.php');
-require_once($root . '/Config/Exception.php');
-require_once($root . '/Config/Storage/Interface.php');
-require_once($root . '/Config/Storage/Apc.php');
-require_once($root . '/Config/Storage/File.php');
-require_once($root . '/Config/Storage/MySQL.php');
+require_once($root . '/ConfigEnvironment.php');
+require_once($root . '/ConfigException.php');
+require_once($root . '/Storage/StorageInterface.php');
+require_once($root . '/Storage/ApcStorage.php');
+require_once($root . '/Storage/FileStorage.php');
+require_once($root . '/Storage/MysqlStorage.php');
 
 $usage = <<<EOT
 Usage: {$argv[0]} OPTIONS environment
@@ -40,26 +40,26 @@ for ($i = 1; $i < count($argv); $i++) {
 }
 
 if ($inheritance) {
-    $parser = new Config_Environment();
+    $parser = new ConfigEnvironment();
     $environments = $parser->getLineage($environments);
 }
 
 /*
 $config = Config::getInstance()
-    ->setSource(new Config_Storage_File(array('root' => $root . "/")))
-    ->setCache(new Config_Storage_File(array('root' => "/tmp/")))
+    ->setSource(new FileStorage(array('root' => $root . "/")))
+    ->setCache(new FileStorage(array('root' => "/tmp/")))
     ->load($environments);
 */
 
 $config = Config::getInstance()
-    ->setSourceEngine(new Config_Storage_MySQL(array(
+    ->setSourceEngine(new MysqlStorage(array(
                     'host'     => '127.0.0.1',
                     'username' => 'test',
                     'password' => 'test',
                     'database' => 'tmp',
-                    'table'    => 'config_environments')))
-    ->addCacheEngine(new Config_Storage_Apc())
-    ->addCacheEngine(new Config_Storage_File(array('root' => "/tmp/")))
+                    'table'    => 'ConfigEnvironments')))
+    ->addCacheEngine(new ApcStorage())
+    ->addCacheEngine(new ApcStorFileStorage(array('root' => "/tmp/")))
     ->load($environments, $reload);
 
 print "Config: ";

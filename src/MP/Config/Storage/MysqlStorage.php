@@ -1,6 +1,8 @@
 <?php
-class Config_Storage_MySQL
-implements Config_Storage_Interface
+namespace MP\Config\Storage;
+
+class MysqlStorage
+implements StorageInterface
 {
     private $host;
     private $username;
@@ -18,7 +20,7 @@ implements Config_Storage_Interface
                 'table'    => true);
         $invalidOpts = array_diff_key($opts, $required);
         if ($invalidOpts) {
-            throw new Config_Exception(sprintf("Missing required options: %s",
+            throw new ConfigException(sprintf("Missing required options: %s",
                         implode(", ", array_keys($invalidOpts))));
         }
         $this->host     = $opts['host'];
@@ -41,7 +43,7 @@ implements Config_Storage_Interface
                     mysql_real_escape_string($value));
         $res = mysql_query($sql, $conn);
         if (!$res) {
-            throw new Config_Exception(sprintf(
+            throw new ConfigException(sprintf(
                         "Unable to set key: %s. (%s)",
                         $key, mysql_error($conn)));
         }
@@ -64,14 +66,14 @@ implements Config_Storage_Interface
     {
         $conn = mysql_pconnect($this->host, $this->username, $this->password);
         if (!$conn) {
-            throw new Config_Exception(sprintf(
+            throw new ConfigException(sprintf(
                     "Unable to connect to database host: %s@%s/%s",
                     $this->username,
                     $this->host,
                     $this->database));
         }
         if (!mysql_select_db($this->database, $conn)) {
-            throw new Config_Exception(sprintf(
+            throw new ConfigException(sprintf(
                     "Unable to select database: %s@%s/%s",
                     $this->username,
                     $this->host,

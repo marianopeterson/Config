@@ -1,11 +1,14 @@
 <?php
-$root = dirname(dirname(__FILE__));
-require_once($root . "/Config.php");
-require_once($root . "/Config/Exception.php");
-require_once($root . "/Config/Storage/Interface.php");
-require_once($root . "/Config/Storage/File.php");
+use MP\Config\Config;
+use MP\Config\Storage;
 
-class ConfigTest extends PHPUnit_Framework_TestCase
+$root = dirname(dirname(__FILE__)) . '/src/MP/Config';
+require_once($root . "/Config.php");
+require_once($root . "/ConfigException.php");
+require_once($root . "/Storage/StorageInterface.php");
+require_once($root . "/Storage/FileStorage.php");
+
+class ConfigTest extends \PHPUnit_Framework_TestCase
 {
     public function testGetInstanceReturnsSameObject()
     {
@@ -20,12 +23,12 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             "db.host" => "10.0.0.1",
             "db.port" => "3306");
 
-        $storage = $this->getMock('Config_Storage_File', array('get'));
+        $storage = $this->getMock('MP\Config\Storage\FileStorage', array('get'));
         $storage->expects($this->any())
                 ->method('get')
                 ->will($this->returnValue($configData));
 
-        $config = $this->getMock('Config', array('parseSpec', 'getSourceEngine'));
+        $config = $this->getMock('MP\Config\Config', array('parseSpec', 'getSourceEngine'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
@@ -43,12 +46,12 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             "db.host" => "10.0.0.1",
             "db.port" => "3306");
 
-        $storage = $this->getMock('Config_Storage_File', array('get'));
+        $storage = $this->getMock('MP\Config\Storage\FileStorage', array('get'));
         $storage->expects($this->any())
                 ->method('get')
                 ->will($this->returnValue($configData));
 
-        $config = $this->getMock('Config', array('parseSpec', 'getSourceEngine'));
+        $config = $this->getMock('MP\Config\Config', array('parseSpec', 'getSourceEngine'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
@@ -56,7 +59,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
                ->method('getSourceEngine')
                ->will($this->returnValue(null));
 
-        $this->setExpectedException('Config_Exception');
+        $this->setExpectedException('MP\Config\ConfigException');
         $actual = $config->load('foo')->toArray();
     }
 
@@ -66,7 +69,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             "db.host" => "10.0.0.1",
             "db.port" => "3306");
 
-        $cache = $this->getMock('Config_Storage_File', array('get', 'set'));
+        $cache = $this->getMock('MP\Config\Config\FileStorage', array('get', 'set'));
         $cache->expects($this->any())
               ->method('get')
               ->will($this->returnValue(false));
@@ -74,12 +77,12 @@ class ConfigTest extends PHPUnit_Framework_TestCase
               ->method('set')
               ->will($this->returnValue(true));
 
-        $source = $this->getMock('Config_Storage_File', array('get'));
+        $source = $this->getMock('MP\Config\Config\FileStorage', array('get'));
         $source->expects($this->any())
                ->method('get')
                ->will($this->returnValue($configData));
 
-        $config = $this->getMock('Config',
+        $config = $this->getMock('MP\Config\Config',
                 array('parseSpec', 'getSourceEngine', 'getCacheEngines'));
         $config->expects($this->any())
                ->method('parseSpec')
@@ -101,7 +104,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             "db.host" => "10.0.0.1",
             "db.port" => "3306");
 
-        $storage = $this->getMock('Config_Storage_File', array('get', 'set'));
+        $storage = $this->getMock('MP\Config\Storage\FileStorage', array('get', 'set'));
         $storage->expects($this->any())
                 ->method('get')
                 ->will($this->returnValue(serialize($configData)));
@@ -109,7 +112,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
                 ->method('set')
                 ->will($this->returnValue(true));
 
-        $config = $this->getMock('Config', array('parseSpec', 'getCacheEngines'));
+        $config = $this->getMock('MP\Config\Config', array('parseSpec', 'getCacheEngines'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
@@ -131,13 +134,13 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             "db.host" => "10.0.0.1",
             "db.port" => "3306");
 
-        $source = $this->getMock('Config_Storage_File', array('get'));
+        $source = $this->getMock('MP\Config\Storage\FileStorage', array('get'));
         // We must get() from source:
         $source->expects($this->atLeastOnce())
                ->method('get')
                ->will($this->returnValue('any-string'));
 
-        $cache = $this->getMock('Config_Storage_File', array('get', 'set'));
+        $cache = $this->getMock('MP\Config\Storage\FileStorage', array('get', 'set'));
         // We must not try to get() from cache:
         $cache->expects($this->never())
               ->method('get')
@@ -147,7 +150,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
               ->method('set')
               ->will($this->returnValue(true));
 
-        $config = $this->getMock('Config',
+        $config = $this->getMock('MP\Config\Config',
                 array('getSourceEngine', 'getCacheEngines', 'parseSpec'));
         $config->expects($this->any())
                ->method('getSourceEngine')
@@ -169,12 +172,12 @@ class ConfigTest extends PHPUnit_Framework_TestCase
             "db.host" => "10.0.0.1",
             "db.port" => "3306");
 
-        $storage = $this->getMock('Config_Storage_File', array('get'));
+        $storage = $this->getMock('MP\Config\Storage\FileStorage', array('get'));
         $storage->expects($this->any())
                 ->method('get')
                 ->will($this->returnValue($configData));
 
-        $config = $this->getMock('Config', array('parseSpec', 'getSourceEngine'));
+        $config = $this->getMock('MP\Config\Config', array('parseSpec', 'getSourceEngine'));
         $config->expects($this->any())
                ->method('parseSpec')
                ->will($this->returnArgument(0));
@@ -189,7 +192,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase
     public function testGetWithInvalidKey()
     {
         $config = new Config();
-        $this->setExpectedException('Config_Exception');
+        $this->setExpectedException('MP\Config\ConfigException');
         $config->get("invalid.key");
     }
 
@@ -259,7 +262,7 @@ EOT;
         $spec = <<<EOT
             db.host 10.0.0.1
 EOT;
-        $this->setExpectedException('Config_Exception');
+        $this->setExpectedException('MP\Config\ConfigException');
         $config = new Config();
         $actual = $config->parseSpec($spec);
     }
@@ -398,20 +401,20 @@ EOT;
     public function testSourceAccessors()
     {
         $config    = new Config();
-        $storage   = new Config_Storage_File(array('root' => '/tmp/foo'));
+        $storage   = new MP\Config\Storage\FileStorage(array('root' => '/tmp/foo'));
         $setResult = $config->setSourceEngine($storage);
 
-        $this->assertType('Config', $setResult);
+        $this->assertInstanceOf('MP\Config\Config', $setResult);
         $this->assertEquals($config->getSourceEngine(), $storage);
     }
 
     public function testCacheAccessors()
     {
         $config    = new Config();
-        $storage   = new Config_Storage_File(array('root' => '/tmp/foo'));
+        $storage   = new Storage\FileStorage(array('root' => '/tmp/foo'));
         $setResult = $config->addCacheEngine($storage);
 
-        $this->assertType('Config', $setResult);
+        $this->assertInstanceOf('MP\Config\Config', $setResult);
         $this->assertEquals($config->getCacheEngines(), array($storage));
     }
 
@@ -424,7 +427,7 @@ EOT;
         // MySQL canonical data store; we should never have to call get() on
         // this because even though the APC cache will miss, the secondary
         // File cache should hit (in our test case below).
-        $mysql = $this->getMock('Config_Storage_MySQL', array('get'));
+        $mysql = $this->getMock('MP\Config\Storage\MysqlStorage', array('get'));
         $mysql->expects($this->never())
               ->method('get')
               ->will($this->returnValue(''));
@@ -432,7 +435,7 @@ EOT;
         // APC cache will miss; we must call get() atLeastOnce to see this.
         // We must also call set() atLeastOnce to prove we repopulated the
         // APC cache after the File cache.
-        $apc = $this->getMock('Config_Storage_APC', array('get', 'set'));
+        $apc = $this->getMock('MP\Config\Storage\ApcStorage', array('get', 'set'));
         $apc->expects($this->atLeastOnce())
             ->method('get')
             ->will($this->returnValue(false));
@@ -442,7 +445,7 @@ EOT;
 
         // File cache will hit; we should call get() atLeastOnce
         // Since this cache hit, we should never call set() on it.
-        $file = $this->getMock('Config_Storage_File', array('get'));
+        $file = $this->getMock('MP\Config\Storage\FileStorage', array('get'));
         $file->expects($this->atLeastOnce())
              ->method('get')
              ->will($this->returnValue(serialize($configData)));
@@ -450,7 +453,7 @@ EOT;
              ->method('set')
              ->will($this->returnValue(true));
 
-        $config = $this->getMock('Config', array('getCacheEngines', 'getSourceEngine'));
+        $config = $this->getMock('MP\Config\Config', array('getCacheEngines', 'getSourceEngine'));
         $config->expects($this->never())
                ->method('getSourceEngine')
                ->will($this->returnValue($mysql));
@@ -473,13 +476,13 @@ EOT;
             "db.port" => "3306");
 
         // Canonical data store; must call get() once
-        $mysql = $this->getMock('Config_Storage_MySQL', array('get'));
+        $mysql = $this->getMock('MP\Config\Storage\MysqlStorage', array('get'));
         $mysql->expects($this->once())
               ->method('get')
               ->will($this->returnValue('any-string'));
 
         // APC cache will miss on get(), then must call set() once.
-        $apc = $this->getMock('Config_Storage_APC', array('get', 'set'));
+        $apc = $this->getMock('MP\Config\Storage\ApcStorage', array('get', 'set'));
         $apc->expects($this->atLeastOnce())
             ->method('get')
             ->will($this->returnValue(false));
@@ -488,7 +491,7 @@ EOT;
             ->will($this->returnValue(true));
 
         // File cache will miss on get(), then must call set() once.
-        $file = $this->getMock('Config_Storage_File', array('get', 'set'));
+        $file = $this->getMock('MP\Config\Storage\FileStorage', array('get', 'set'));
         $file->expects($this->atLeastOnce())
              ->method('get')
              ->will($this->returnValue(false));
@@ -497,7 +500,7 @@ EOT;
              ->will($this->returnValue(true));
 
         // Setup the config mock
-        $config = $this->getMock('Config',
+        $config = $this->getMock('MP\Config\Config',
                 array('getCacheEngines', 'getSourceEngine', 'parseSpec'));
         $config->expects($this->any())
                ->method('getSourceEngine')
@@ -519,16 +522,16 @@ EOT;
      */
     public function testSetCache()
     {
-        $s1 = $this->getMock('Config_Storage_File', array('set'));
+        $s1 = $this->getMock('MP\Config\Storage\FileStorage', array('set'));
         $s1->expects($this->once())
            ->method('set')
            ->will($this->returnValue(true));
-        $s2 = $this->getMock('Config_Storage_File', array('set'));
+        $s2 = $this->getMock('MP\Config\Storage\FileStorage', array('set'));
         $s2->expects($this->once())
            ->method('set')
            ->will($this->returnValue(true));
 
-        $config = $this->getMock('Config', array('getCacheEngines'));
+        $config = $this->getMock('MP\Config\Config', array('getCacheEngines'));
         $config->expects($this->any())
                ->method('getCacheEngines')
                ->will($this->returnValue(array($s1, $s2)));
@@ -541,16 +544,16 @@ EOT;
      */
     public function testSetCacheWithFailures()
     {
-        $s1 = $this->getMock('Config_Storage_File', array('set'));
+        $s1 = $this->getMock('MP\Config\Storage\FileStorage', array('set'));
         $s1->expects($this->once())
            ->method('set')
            ->will($this->returnValue(false));
-        $s2 = $this->getMock('Config_Storage_File', array('set'));
+        $s2 = $this->getMock('MP\Config\Storage\FileStorage', array('set'));
         $s2->expects($this->once())
            ->method('set')
            ->will($this->returnValue(true));
 
-        $config = $this->getMock('Config', array('getCacheEngines'));
+        $config = $this->getMock('MP\Config\Config', array('getCacheEngines'));
         $config->expects($this->any())
                ->method('getCacheEngines')
                ->will($this->returnValue(array($s1, $s2)));

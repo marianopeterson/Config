@@ -1,6 +1,10 @@
 <?php
-class Config_Storage_File
-implements Config_Storage_Interface
+namespace MP\Config\Storage;
+
+use MP\Config\ConfigException;
+
+class FileStorage
+implements StorageInterface
 {
     private $root;
 
@@ -9,7 +13,7 @@ implements Config_Storage_Interface
         $default = array('root' => '');
         $invalid = array_diff_key($opts, $default);
         if ($invalid) {
-            throw new Config_Exception(sprintf("Invalid options: %s",
+            throw new ConfigException(sprintf("Invalid options: %s",
                         implode(", ", $invalid)));
         }
         $opts = array_merge($default, $opts);
@@ -18,9 +22,8 @@ implements Config_Storage_Interface
 
     public function set($key, $value)
     {
-        try {
-            $r = file_put_contents($this->root . $key, $value);
-        } catch (Exception $e) {
+        $r = @file_put_contents($this->root . $key, $value);
+        if ($r === false) {
             return false;
         }
         return true;
@@ -28,10 +31,11 @@ implements Config_Storage_Interface
 
     public function get($key)
     {
-        $filePath = $this->root . $key;
-        if (!is_readable($filePath)) {
+        $path = $this->root . $key;
+        $contents = @file_get_contents($path);
+        if ($contents === false) {
             return false;
         }
-        return file_get_contents($filePath);
+        return $contents;
     }
 }

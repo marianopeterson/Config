@@ -1,0 +1,14 @@
+{
+    "name": "marianopeterson/config",
+    "type": "library",
+    "description": "Cascading configuration system",
+    "authors": [
+        {
+            "name": "Mariano Peterson",
+            "email": "mariano@petersonpages.com"
+        }
+    ],
+    "autoload": {
+        "psr-0": { "MP": "src" }
+    }
+}

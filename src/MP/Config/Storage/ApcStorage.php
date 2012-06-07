@@ -1,6 +1,8 @@
 <?php
-class Config_Storage_Apc
-implements Config_Storage_Interface
+namespace MP\Config\Storage;
+
+class ApcStorage
+implements StorageInterface
 {
     public function __construct(array $opts = array())
     {

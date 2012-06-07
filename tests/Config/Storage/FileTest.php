@@ -1,51 +1,52 @@
 <?php
-$root = dirname(dirname(dirname(dirname(__FILE__))));
-require_once($root . "/Config.php");
-require_once($root . "/Config/Exception.php");
-require_once($root . "/Config/Storage/Interface.php");
-require_once($root . "/Config/Storage/File.php");
+use MP\Config\Config;
+use MP\Config\Storage\FileStorage;
 
-class Config_Storage_FileTest extends PHPUnit_Framework_TestCase
+$root = dirname(dirname(dirname(dirname(__FILE__)))) . '/src/MP/Config';
+require_once($root . "/Config.php");
+require_once($root . "/ConfigException.php");
+require_once($root . "/Storage/StorageInterface.php");
+require_once($root . "/Storage/FileStorage.php");
+
+class FileStorageTest extends PHPUnit_Framework_TestCase
 {
     public function testConstructorWithDefaultOptions()
     {
-        $storage = new Config_Storage_File();
-        $this->assertType('Config_Storage_Interface', $storage);
+        $storage = new FileStorage();
+        $this->assertInstanceOf('MP\Config\Storage\StorageInterface', $storage);
     }
 
     public function testConstructorWithInvalidOption()
     {
-        $this->setExpectedException('Config_Exception');
-        $storage = new Config_Storage_File(array('invalid' => 'foo'));
+        $this->setExpectedException('MP\Config\ConfigException');
+        $storage = new FileStorage(array('invalid' => 'foo'));
     }
 
     public function testConstructorWithValidOption()
     {
-        $storage = new Config_Storage_File(array('root' => 'foo'));
+        $storage = new FileStorage(array('root' => 'foo'));
         $this->assertTrue(true);
     }
 
-    public function testSet()
+    public function testSetAndGet()
     {
         $root = '/tmp/';
-        $key  = 'phpunit-' . __CLASS__ . '-' . __FUNCTION__ 
-            . '-' . time();
+        $key  = 'phpunit-' . __CLASS__ . '-' . __FUNCTION__ . '-' . time();
         if (!is_writable($root)) {
             $this->fail('Unable to write to tmp file: ' .  $key);
         }
-        $storage  = new Config_Storage_File(array('root' => $root));
-        $contents = '229dss9999';
+        $storage  = new FileStorage(array('root' => $root));
+        $contents = __METHOD__;
         $storage->set($key, $contents);
         $actual = $storage->get($key);
         $this->assertEquals($contents, $actual);
     }
 
-    public function testSetWithError()
+    public function testSetWithErrorFileDoesNotExist()
     {
         $root = '/tmp/dir/does/not/exist/';
-        $key  = 'phpunit-' . __CLASS__ . '-' . __FUNCTION__ 
-            . '-' . time();
-        $storage   = new Config_Storage_File(array('root' => $root));
+        $key = 'phpunit-' . __CLASS__ . '-' . __FUNCTION__ . '-' . time();
+        $storage   = new FileStorage(array('root' => $root));
         $contents  = '229dss9999';
         $setResult = $storage->set($key, $contents);
         $this->assertFalse($setResult);
@@ -54,12 +55,10 @@ class Config_Storage_FileTest extends PHPUnit_Framework_TestCase
     public function testGetWithError()
     {
         $root = '/tmp/dir/does/not/exist/';
-        $key  = 'phpunit-' . __CLASS__ . '-' . __FUNCTION__ 
-            . '-' . time();
-        $storage = new Config_Storage_File(array('root' => $root));
+        $key  = 'phpunit-' . __CLASS__ . '-' . __FUNCTION__ . '-' . time();
+        $storage = new FileStorage(array('root' => $root));
         $storage->get($key);
         $actual = $storage->get($key);
         $this->assertFalse($actual);
     }
-
 }
