@@ -10,6 +10,18 @@ implements StorageInterface
     private $database;
     private $table;
 
+    /**
+     * Defines the database connection.
+     * {@inheritdoc}
+     * 
+     * Constructor options for MysqlStorage:
+     *  - host:     Name of host where the database resides.
+     *              Port can optionally be appended, e.g., "127.0.0.1:3306"
+     *  - database: Name of database containing the config table.
+     *  - table:    Name of database table containing the config data.
+     *  - username: Database user name.
+     *  - password: Database password.
+     */
     public function __construct(array $opts = array())
     {
         $required = array(
@@ -30,6 +42,9 @@ implements StorageInterface
         $this->table    = $opts['table'];
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function set($key, $value)
     {
         $conn = $this->connect();
@@ -49,6 +64,9 @@ implements StorageInterface
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function get($key)
     {
         $conn = $this->connect();
