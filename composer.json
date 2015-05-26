@@ -10,5 +10,10 @@
     ],
     "autoload": {
         "psr-0": { "MP": "src" }
+    },
+    "require-dev": {
+        "docopt/docopt": "1.0.0",
+        "seld/cli-prompt": "^1.0",
+        "ulrichsg/getopt-php": "2.3.*"
     }
 }

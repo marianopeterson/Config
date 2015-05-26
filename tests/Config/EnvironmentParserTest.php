@@ -1,16 +1,14 @@
 <?php
 use MP\Config\Config;
-use MP\Config\ConfigEnvironment;
+use MP\Config\EnvironmentParser;
 
-$root = dirname(dirname(dirname(__FILE__))) . '/src/MP/Config';
-require_once($root . "/ConfigEnvironment.php");
-require_once($root . "/ConfigException.php");
+require dirname(dirname(dirname(__FILE__))) . '/vendor/autoload.php';
 
 class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 {
     public function testGetLineageWithSimpleName()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $actual = $env->getLineage('dev');
         $expected = array('dev');
         $this->assertEquals($expected, $actual);
@@ -18,7 +16,7 @@ class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 
     public function testGetLineageWithCompositeName()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $actual = $env->getLineage('dev.foo');
         $expected = array('dev', 'dev.foo');
         $this->assertEquals($expected, $actual);
@@ -26,7 +24,7 @@ class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 
     public function testJoinWithSimpleName()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $actual = $env->getLineage('dev', array('join' => '/'));
         $expected = array('dev');
         $this->assertEquals($expected, $actual);
@@ -34,7 +32,7 @@ class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 
     public function testJoinWithCompositeName()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $actual = $env->getLineage('dev.foo', array('join' => '/'));
         $expected = array('dev', 'dev/foo');
         $this->assertEquals($expected, $actual);
@@ -42,7 +40,7 @@ class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 
     public function testPrefixWithSimpleName()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $actual = $env->getLineage('dev', array(
                     'join'   => '/',
                     'prefix' => '/path/to/'));
@@ -53,7 +51,7 @@ class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 
     public function testPrefixWithCompositeName()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $actual = $env->getLineage('dev.mariano', array(
                     'join'   => '.',
                     'prefix' => '/path/to/'));
@@ -65,7 +63,7 @@ class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 
     public function testRoot()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $actual = $env->getLineage('dev.mariano', array('root' => 'default'));
         $expected = array('default', 'dev', 'dev.mariano');
         $this->assertEquals($expected, $actual);
@@ -73,7 +71,7 @@ class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 
     public function testSuffix()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $actual = $env->getLineage('dev.mariano', array('suffix' => '.ini'));
         $expected = array('dev.ini', 'dev.mariano.ini');
         $this->assertEquals($expected, $actual);
@@ -81,7 +79,7 @@ class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 
     public function testAllOptions()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $actual = $env->getLineage('dev.mariano', array(
                     'root'   => 'default',
                     'prefix' => '/path/to/',
@@ -96,7 +94,7 @@ class ConfigEnvironmentTest extends PHPUnit_Framework_TestCase
 
     public function testInvalidOption()
     {
-        $env = new ConfigEnvironment();
+        $env = new EnvironmentParser();
         $this->setExpectedException('MP\Config\ConfigException');
         $env->getLineage('dev.mariano', array('invalid' => 'foo'));
     }

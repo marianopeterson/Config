@@ -18,6 +18,9 @@ implements StorageInterface
         }
         $opts = array_merge($default, $opts);
         $this->root = $opts['root'];
+        if (!is_dir($this->root)) {
+            mkdir($this->root);
+        }
     }
 
     public function set($key, $value)

@@ -1,7 +1,7 @@
 <?php
 namespace MP\Config;
 
-class ConfigEnvironment
+class EnvironmentParser
 {
     /**
      * Takes an environment name and translates it into a sequence of
